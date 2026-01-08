@@ -5,7 +5,7 @@ import { CashRequest } from "../Interfaces/main";
 import moment from 'moment-timezone';
 
 export const MainController = async (req: Request, res: Response) => {
-    const { selectedComp, selectedAll, selectedCheckbox } = req.body;
+    const { selectedComp, selectedAll, selectedCheckbox, month, year } = req.body;
 
     try {
 
@@ -18,7 +18,21 @@ export const MainController = async (req: Request, res: Response) => {
 
         let all = "cash_request.`status` = '1'";
         if(selectedAll === '1'){
-            all = "(cash_request.`status` = '1' OR cash_request.`status` = '3') AND paid_date IS NOT NULL";
+            all = "cash_request.`status` = '3'";
+        }
+
+        let yearFilter = "AND YEAR(tgl) > '2023'";
+        let yearData = "";
+        if(year) {
+            yearFilter = `AND YEAR(tgl) = ?`;
+            yearData = year;
+        }
+
+        let monthFilter = "";
+        let monthData = "";
+        if(month !== "") {
+            monthFilter = `AND MONTH(tgl) = ?`;
+            monthData = month;
         }
 
         // console.log('selectedComp:', selectedComp)
@@ -41,8 +55,9 @@ export const MainController = async (req: Request, res: Response) => {
 			INNER JOIN karyawan ON cash_request.nik = karyawan.nik
 			WHERE ${all}
 			AND cash_request.utm = ?
-            AND YEAR(tgl) > '2023'
-            ORDER BY cash_request.duedate, cash_request.id_cash`, [comp]
+            ${yearFilter}
+            ${monthFilter}
+            ORDER BY cash_request.duedate, cash_request.id_cash`, [comp, yearData, monthData]
         );
 
         const castReqList = (rowCastReq as CashRequest[]).map((item: CashRequest) => {
